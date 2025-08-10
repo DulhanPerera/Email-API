@@ -27,3 +27,7 @@ class INIFileReadError(TaskProcessingError):
 class TaskProcessingException(TaskProcessingError):
     """Raised when there is a general task processing error."""
     pass
+
+class BaseCustomException(Exception):
+    """Base exception for task processing errors."""
+    pass

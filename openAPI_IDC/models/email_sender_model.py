@@ -1,8 +1,20 @@
-from pydantic import BaseModel
-from typing import List, Optional,Any
-from pydantic import BaseModel
-from datetime import datetime
+from pydantic import BaseModel, EmailStr
+from typing import List, Optional, Any, ForwardRef
+from datetime import date
 
+# Forward references for type hints
+EmailBodyModel = ForwardRef('EmailBodyModel')
+TableFilterInfo = ForwardRef('TableFilterInfo')
+
+class TableFilterInfo(BaseModel):
+    Name: str
+    CompanyName: str
+    BillingCenter: str
+    Arrears: float
+
+class EmailBodyModel(BaseModel):
+    Sender_Name: str
+    Table_Filter_infor: Optional[TableFilterInfo]
 
 class EmailSenderRequest(BaseModel):
     Type: str
@@ -11,16 +23,10 @@ class EmailSenderRequest(BaseModel):
     Subject: str
     TemplateName: str
     EmailBody: EmailBodyModel
-    Attachments: List[str]
+    Attachments: List[str] = []
     Date: date
 
-class EmailBodyModel(BaseModel):
-    Sender_Name: str
-    Table_Filter_infor: Optional[TableFilterInfo]
-
-class TableFilterInfo(BaseModel):
-    Name: str
-    CompanyName: str
-    BillingCenter: str
-    Arrears: float
+# Resolve forward references
+EmailBodyModel.update_forward_refs()
+TableFilterInfo.update_forward_refs()
 
