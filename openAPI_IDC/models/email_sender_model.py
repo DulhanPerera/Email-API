@@ -1,5 +1,5 @@
-from pydantic import BaseModel, EmailStr
-from typing import List, Optional, Any, ForwardRef
+from pydantic import BaseModel, EmailStr, Field
+from typing import List, Optional, Any, ForwardRef, Dict
 from datetime import date
 
 # Forward references for type hints
@@ -7,10 +7,16 @@ EmailBodyModel = ForwardRef('EmailBodyModel')
 TableFilterInfo = ForwardRef('TableFilterInfo')
 
 class TableFilterInfo(BaseModel):
-    Name: str
-    CompanyName: str
-    BillingCenter: str
-    Arrears: float
+    # This will store all the dynamic fields
+    data: Dict[str, Any] = Field(default_factory=dict)
+    
+    class Config:
+        extra = 'allow'  # This allows extra fields
+    
+    def __init__(self, **data):
+        # Store all fields in the data dictionary
+        super().__init__(**{'data': {**data}})
+        self.data.update(data)
 
 class EmailBodyModel(BaseModel):
     Sender_Name: str

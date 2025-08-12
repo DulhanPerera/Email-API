@@ -26,7 +26,7 @@ SMTP_PASSWORD = os.getenv("EMAIL_PASS", "")
 FROM_EMAIL = SMTP_USER or "no-reply@example.com"
 
 # Set up Jinja2 environment
-template_dir = os.path.join(os.path.dirname(__file__), 'python_email_templates')
+template_dir = os.path.join(os.path.dirname(__file__), 'html_templates')
 jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir))
 
 template_mapping = {
@@ -72,7 +72,24 @@ def send_email_function(request: EmailSenderRequest):
 
     try:
         template = jinja_env.get_template(f"{template_file}.html")
-        html_body = template.render(**request.EmailBody.dict())
+        render_context = request.EmailBody.model_dump()
+        render_context["Date"] = datetime.now().strftime("%B %d, %Y")
+        render_context["Subject"] = request.Subject  # Add subject to template context
+        logger.info(f"Render context: {render_context}")
+
+        # Process Table_Filter_infor for Template-Table and Template-Mediation
+        if request.TemplateName in ["Template-Table", "Template-Mediation"] and hasattr(request.EmailBody, 'Table_Filter_infor'):
+            # Get the data dictionary from Table_Filter_infor
+            table_data = request.EmailBody.Table_Filter_infor.data
+            logger.info(f"Table data: {table_data}")
+            
+            # Convert the data dictionary to a list with a single item for the table
+            table_html = build_html_table([table_data])
+            logger.info(f"Generated table HTML: {table_html}")
+            render_context["DYNAMIC_TABLE"] = table_html
+
+        html_body = template.render(**render_context)
+        # logger.info(f"Rendered HTML: {html_body}")
     except jinja2.exceptions.TemplateNotFound as e:
         logger.error(f"Template file not found: {e}")
         raise
@@ -81,6 +98,8 @@ def send_email_function(request: EmailSenderRequest):
         raise
 
     msg = MIMEMultipart()
+    # Use Sender_Name in From header (standard email format: Name <email>)
+    # To use only email address, change to: msg['From'] = FROM_EMAIL
     msg['From'] = f"{request.EmailBody.Sender_Name} <{FROM_EMAIL}>" if request.EmailBody.Sender_Name else FROM_EMAIL
     msg['To'] = request.SendersMail
     msg['Cc'] = ', '.join(request.CarbonCopyTo or [])
@@ -112,21 +131,21 @@ def send_email_function(request: EmailSenderRequest):
     finally:
         try:
             db_instance = MongoDBConnectionSingleton()
-            if db_instance.database is None:
-                raise DatabaseConnectionError("MongoDB connection is not established.")
-            db = db_instance.get_database()
-            db.email_logs.insert_one({
-                'type': request.Type,
-                'to': request.SendersMail,
-                'cc': request.CarbonCopyTo,
-                'subject': request.Subject,
-                'template': request.TemplateName,
-                'body': request.EmailBody.dict(),
-                'attachments': request.Attachments,
-                'date': request.Date,
-                'sent_at': str(sent_at),
-                'status': status
-            })
+            # if db_instance.database is None:
+            #     raise DatabaseConnectionError("MongoDB connection is not established.")
+            # db = db_instance.get_database()
+            # db.email_logs.insert_one({
+            #     'type': request.Type,
+            #     'to': request.SendersMail,
+            #     'cc': request.CarbonCopyTo,
+            #     'subject': request.Subject,
+            #     'template': request.TemplateName,
+            #     'body': request.EmailBody.dict(),
+            #     'attachments': request.Attachments,
+            #     'date': request.Date,
+            #     'sent_at': str(sent_at),
+            #     'status': status
+            # })
             logger.info("Email log inserted to DB")
         except DatabaseConnectionError as e:
             logger.error(f"Database connection error: {e}")
@@ -134,3 +153,31 @@ def send_email_function(request: EmailSenderRequest):
         except Exception as e:
             logger.error(f"Failed to insert email log to DB: {e}")
             raise DatabaseUpdateError(f"Failed to update database: {e}")
+
+def build_html_table(data: list[dict]) -> str:
+    """Convert list of dicts into a responsive HTML table with formatted list values."""
+    if not data:
+        return "<p>No data available.</p>"
+
+    headers = data[0].keys()
+    table_html = ['<table style="width:100%; border-collapse: collapse;" border="1" cellpadding="8" cellspacing="0">']
+
+    # Header row
+    table_html.append('<tr style="background-color: #f2f2f2;">')
+    for h in headers:
+        table_html.append(f"<th style='text-align:left'>{h}</th>")
+    table_html.append('</tr>')
+
+    # Data rows
+    for row in data:
+        table_html.append('<tr>')
+        for h in headers:
+            value = row[h]
+            if isinstance(value, list) and len(value) == 2:
+                # Format list of two items as "item1 - item2"
+                value = f"{value[0]} - {value[1]}"
+            table_html.append(f"<td>{value}</td>")
+        table_html.append('</tr>')
+
+    table_html.append('</table>')
+    return ''.join(table_html)
