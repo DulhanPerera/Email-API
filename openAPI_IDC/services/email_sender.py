@@ -77,7 +77,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 from datetime import datetime
-from typing import Optional, Dict, Any, List, Union
+from typing import Optional, Dict, Any, List
 from fastapi import BackgroundTasks
 import jinja2  # For rendering HTML templates with placeholders
 from pathlib import Path
