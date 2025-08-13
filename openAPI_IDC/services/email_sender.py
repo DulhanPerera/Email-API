@@ -1,42 +1,123 @@
+#region-Details_Template
+"""
+API : Email Sending Service
+Name : Email_Sender   
+Description : Handles sending of HTML emails with dynamic content and attachments
+Created By : Dulhan Perera (vicksurap@gmail.com)
+Created Date : 2024-08-13
+
+Version: 2.0
+
+Input Parameters:
+    * request: EmailSenderRequest object containing email details
+    * background_tasks: Optional FastAPI BackgroundTasks for async processing
+
+Input:
+    * Email content (HTML/plain text)
+    * Recipient information
+    * Template selection
+    * Optional attachments
+    * CC/BCC recipients
+
+Output:
+    * Sends email via SMTP
+    * Logs email details to MongoDB
+    * Returns status of email sending operation
+
+Operation:
+    * Validates email request
+    * Renders HTML template with provided data
+    * Processes and attaches files
+    * Sends email via configured SMTP server
+    * Logs the operation for tracking
+
+Dependencies:
+    * Python 3.12.4+
+    * FastAPI
+    * Jinja2
+    * pymongo
+    * python-dotenv
+"""
+
+"""
+Version: 2.0
+Dependencies: 
+    * fastapi
+    * jinja2
+    * pymongo
+    * python-dotenv
+    * email-validator
+
+Related Files:
+    * models/email_sender_model.py - Request/response models
+    * services/html_templates/ - Email templates
+    * Attachments/ - Directory for email attachments
+
+Purpose: 
+    Provides a robust email sending service with template support and logging
+
+Version History:
+    * 2.0 (2024-08-13) - Major update with template support and attachments
+      - Added HTML template rendering
+      - Added attachment handling
+      - Improved error handling and logging
+    * 1.0 (2024-05-28) - Initial version
+      - Basic email sending functionality
+
+Notes:
+    * SMTP configuration is loaded from environment variables
+    * Email templates use Jinja2 syntax
+    * Attachments are stored in the project's Attachments directory
+"""
+#endregion-Details_Template
+
 import os
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 from datetime import datetime
+from typing import Optional, Dict, Any, List, Union
 from fastapi import BackgroundTasks
 import jinja2  # For rendering HTML templates with placeholders
 from pathlib import Path
 
+# Custom imports
 from utils.logger import SingletonLogger
 from utils.connectionMongo import MongoDBConnectionSingleton
 from utils.Custom_Exceptions import DatabaseConnectionError, DatabaseUpdateError
 from utils.core_utils import get_config
 from openAPI_IDC.models.email_sender_model import EmailSenderRequest
 
-# Get logger
+# Initialize logger for application-wide logging
 logger = SingletonLogger.get_logger('appLogger')
 
-# Load config (env-aware)
+# Load environment-specific configuration
 config = get_config()
 
-SMTP_HOST = os.getenv("SMTP_Host", "localhost")
-SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
-SMTP_USER = os.getenv("EMAIL_USER", "")
-SMTP_PASSWORD = os.getenv("EMAIL_PASS", "")
-FROM_EMAIL = SMTP_USER or "no-reply@example.com"
+# SMTP server configuration
+SMTP_HOST = os.getenv("SMTP_Host", "localhost")  # SMTP server hostname
+SMTP_PORT = int(os.getenv("SMTP_PORT", 587))      # SMTP server port (default: 587 for TLS)
+SMTP_USER = os.getenv("EMAIL_USER", "")           # SMTP authentication username
+SMTP_PASSWORD = os.getenv("EMAIL_PASS", "")       # SMTP authentication password
+FROM_EMAIL = SMTP_USER or "no-reply@example.com"   # Default sender email
 
-# Set up Jinja2 environment
-# Set up directories
+# Configure file system paths
+# Path to directory containing HTML email templates
 template_dir = os.path.join(os.path.dirname(__file__), 'html_templates')
+# Path to directory for storing email attachments (3 directories up from current file)
 attachments_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'Attachments')
 
-# Create attachments directory if it doesn't exist
+# Ensure attachments directory exists
 os.makedirs(attachments_dir, exist_ok=True)
 
-# Set up Jinja2 environment
-jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir))
+# Initialize Jinja2 template environment with file system loader
+jinja_env = jinja2.Environment(
+    loader=jinja2.FileSystemLoader(template_dir),
+    autoescape=jinja2.select_autoescape(['html', 'xml'])
+)
 
+# Map template names to their corresponding HTML files
 template_mapping = {
     "Template-Mediation": "mediation_board_template",
     "Template-Defaulted-Cases": "defaulted_cases_template",
@@ -45,16 +126,22 @@ template_mapping = {
     "Template-Table": "table_template",
 }
 
-def send_emails_process(request: EmailSenderRequest, background_tasks: BackgroundTasks = None):
+def send_emails_process(request: EmailSenderRequest, background_tasks: BackgroundTasks = None) -> Dict[str, str]:
     """
-    Process email sending request and handle it in the background if needed.
+    Process email sending request, either immediately or as a background task.
     
     Args:
-        request: The email sending request
+        request: EmailSenderRequest object containing email details
         background_tasks: Optional FastAPI BackgroundTasks instance for async processing
         
     Returns:
-        dict: Result of the email sending operation
+        dict: Status and message indicating the result of the operation
+        
+    Example:
+        >>> request = EmailSenderRequest(...)
+        >>> result = send_emails_process(request)
+        >>> print(result)
+        {'status': 'success', 'message': 'Email sent successfully'}
     """
     try:
         if background_tasks:
@@ -69,7 +156,26 @@ def send_emails_process(request: EmailSenderRequest, background_tasks: Backgroun
         logger.error(f"Error processing email request: {str(e)}")
         raise
 
-def send_email_function(request: EmailSenderRequest):
+def send_email_function(request: EmailSenderRequest) -> None:
+    """
+    Core function to build and send an email with the given request parameters.
+    
+    This function handles:
+    - Template selection and rendering
+    - Email message construction
+    - Attachment processing
+    - SMTP delivery
+    - Database logging
+    
+    Args:
+        request: EmailSenderRequest object containing all email details
+        
+    Raises:
+        ValueError: If template name is invalid or template file is not found
+        DatabaseConnectionError: If unable to connect to MongoDB
+        DatabaseUpdateError: If email log cannot be written to database
+        Exception: For any other unexpected errors during email sending
+    """
     if request.Type.lower() != 'email':
         logger.info(f"Ignoring request with type: {request.Type}")
         return
@@ -170,8 +276,20 @@ def send_email_function(request: EmailSenderRequest):
             logger.error(f"Failed to insert email log to DB: {e}")
             raise DatabaseUpdateError(f"Failed to update database: {e}")
 
-def build_html_table(data: list[dict]) -> str:
-    """Convert list of dicts into a responsive HTML table with formatted list values."""
+def build_html_table(data: List[Dict[str, Any]]) -> str:
+    """
+    Convert a list of dictionaries into an HTML table string.
+    
+    Args:
+        data: List of dictionaries where each dict represents a table row
+        
+    Returns:
+        str: HTML string containing the formatted table
+        
+    Example:
+        >>> data = [{'name': 'John', 'age': 30}, {'name': 'Jane', 'age': 25}]
+        >>> html = build_html_table(data)
+    """
     if not data:
         return "<p>No data available.</p>"
 
