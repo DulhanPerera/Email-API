@@ -6,6 +6,7 @@ from email.mime.application import MIMEApplication
 from datetime import datetime
 from fastapi import BackgroundTasks
 import jinja2  # For rendering HTML templates with placeholders
+from pathlib import Path
 
 from utils.logger import SingletonLogger
 from utils.connectionMongo import MongoDBConnectionSingleton
@@ -26,7 +27,14 @@ SMTP_PASSWORD = os.getenv("EMAIL_PASS", "")
 FROM_EMAIL = SMTP_USER or "no-reply@example.com"
 
 # Set up Jinja2 environment
+# Set up directories
 template_dir = os.path.join(os.path.dirname(__file__), 'html_templates')
+attachments_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'Attachments')
+
+# Create attachments directory if it doesn't exist
+os.makedirs(attachments_dir, exist_ok=True)
+
+# Set up Jinja2 environment
 jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir))
 
 template_mapping = {
@@ -106,14 +114,22 @@ def send_email_function(request: EmailSenderRequest):
     msg['Subject'] = request.Subject
     msg.attach(MIMEText(html_body, 'html'))
 
-    for attachment in request.Attachments:
-        if os.path.exists(attachment):
-            with open(attachment, 'rb') as f:
-                part = MIMEApplication(f.read(), Name=os.path.basename(attachment))
-                part['Content-Disposition'] = f'attachment; filename="{os.path.basename(attachment)}"'
-                msg.attach(part)
-        else:
-            logger.warning(f"Attachment file not found: {attachment}")
+    # Process attachments if any
+    if hasattr(request, 'Attachments') and request.Attachments:
+        for attachment_name in request.Attachments:
+            attachment_path = os.path.join(attachments_dir, attachment_name)
+            try:
+                if os.path.exists(attachment_path):
+                    with open(attachment_path, 'rb') as f:
+                        part = MIMEApplication(f.read(), Name=os.path.basename(attachment_name))
+                        part['Content-Disposition'] = f'attachment; filename="{os.path.basename(attachment_name)}"'
+                        msg.attach(part)
+                    logger.info(f"Attachment added: {attachment_name}")
+                else:
+                    logger.warning(f"Attachment file not found in attachments folder: {attachment_name}")
+            except Exception as e:
+                logger.error(f"Error attaching file {attachment_name}: {str(e)}")
+                continue
 
     status = 'success'
     sent_at = datetime.now()

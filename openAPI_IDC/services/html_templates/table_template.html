@@ -3,6 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <title>Excel Report</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,opsz,wght@0,18..144,300..900;1,18..144,300..900&family=Mozilla+Headline:wght@200..700&display=swap" rel="stylesheet">
+    <style>
+      .email-subject {
+        font-family: 'Mozilla Headline', 'Merriweather', serif;
+        font-weight: 900; /* Changed from 800 to 900 for maximum boldness */
+        font-size: 1.9em;
+        text-decoration: underline;
+        -webkit-text-stroke: 0.4px; /* Optional: adds slight stroke for better visibility */
+      }
+    </style>
   </head>
   <body style="margin:0; padding:0;">
     <!-- Full-page gradient background using tables -->
@@ -16,7 +28,7 @@
                  style="background: transparent; font-family: Arial, sans-serif; color: #333;">
             <tr>
               <td>
-                <h2 style="color: #003366; text-align: center; margin-bottom: 30px;">
+                <h2 class="email-subject" style="color: #003366; text-align: center; margin-bottom: 30px;">
                   {{ Subject }}
                 </h2>
                 <p style="color: #800040; font-size: 16px;">Dear {{ Sender_Name }},</p>
@@ -35,7 +47,7 @@
                 </p>
 
                 <p style="font-size: 15px; color: #333;">
-                  This is an automated email and replies to this address are not monitored.  
+                  This is an automated email.  
                 </p>
 
                 <hr style="border: none; border-top: 1px solid #ccc; margin: 30px 0;" />

@@ -1,0 +1,52 @@
+App Info — Email Sending Service
+
+Components
+
+- Template Management
+  Located in html_templates directory; templates are selected by a mapping key and rendered with context data.
+
+- Attachments Directory
+  Centralized folder (Attachments) for all files to be attached to outgoing emails.
+
+- Email Sender Request Model
+  Data model (EmailSenderRequest) defining email details including sender info, recipient, CC, subject, template name, body, and attachments.
+
+- Email Sending Logic
+  Core functions:
+  - send_emails_process: Manages synchronous or background email sending.
+  - send_email_function: Builds and sends email messages with proper headers, rendered HTML body, and attachments.
+  - build_html_table: Helper function that formats dynamic tabular data into responsive HTML tables for inclusion in email content.
+
+- Database Logging
+  Uses a MongoDB singleton connection to store email logs, capturing details such as recipients, subject, template, sent timestamp, and status.
+
+Configuration
+
+- SMTP settings are loaded from environment variables:
+  - SMTP_Host (default: localhost)
+  - SMTP_PORT (default: 587)
+  - EMAIL_USER
+  - EMAIL_PASS
+- The FROM_EMAIL defaults to the SMTP user or a fallback address no-reply@example.com.
+
+Usage
+
+1. Prepare EmailSenderRequest with all required data fields, including template name and email body.
+2. Call send_emails_process to send the email either synchronously or asynchronously via background tasks.
+3. Attachments should be placed in the central attachments folder before sending.
+4. Email logs are automatically saved to MongoDB for tracking and troubleshooting.
+
+Dependencies
+
+- Python standard libraries: os, smtplib, datetime, email.mime modules
+- External libraries:
+  - fastapi (for background tasks)
+  - jinja2 (for template rendering)
+  - MongoDB connection utilities
+  - Custom utilities for logging and config management
+
+Error Handling & Logging
+
+- All critical operations are wrapped with exception handling and detailed logs.
+- Template not found, SMTP failures, attachment errors, and database issues are logged with error severity.
+- Failed email attempts raise exceptions to notify calling services.
