@@ -1,20 +1,17 @@
 {
-    "Type": "email",
-    "SendersMail": "vicksurap@gmail.com",
-    "CarbonCopyTo": [
-      "vicksura.20210165@iit.ac.lk"
-    ],
-    "Subject": "Test-Code",
-    "TemplateName": "Template-Table",
-    "EmailBody": {
-      "Sender_Name": "Dulhan",
-      "Table_Filter_infor": {
-        "Name": "Dulhan",
-        "CompanyName": "Street",
-        "BillingCenter": "CMB",
-        "Arrears": 25000
-      }
-    },
-    "Attachments": ["Email_Attach.pdf"],
-    "Date": "2025-08-12"
-  }
+  "EmailType": "Table-Email", 
+  "SendersMail": "vicksurap@gmail.com",
+  "CarbonCopyTo": ["vicksura.20210165@iit.ac.lk"],
+  "Subject": "Test-Code",
+  "EmailBody": {
+    "Sender_Name": "Dulhan",
+    "Table_Filter_infor": {
+      "PersonName": "Dulhan",
+      "CompanyName": "Street",
+      "BillingCenter": "CMB",
+      "Arrears": 25000
+    }
+  },
+  "Attachments": ["Email_Attach.pdf"],
+  "Date": "2025-08-12"
+}

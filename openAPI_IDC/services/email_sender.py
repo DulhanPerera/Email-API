@@ -119,11 +119,11 @@ jinja_env = jinja2.Environment(
 
 # Map template names to their corresponding HTML files
 template_mapping = {
-    "Template-Mediation": "mediation_board_template",
-    "Template-Defaulted-Cases": "defaulted_cases_template",
-    "Template-Defaulted-Customers": "defaulted_customers_template",
-    "Template-Plain": "plain_template",
-    "Template-Table": "table_template",
+    "Mediation-Email": "mediation_board_template",
+    "Defaulted-Cases-Email": "defaulted_cases_template",
+    "Defaulted-Customers-Email": "defaulted_customers_template",
+    "Plain-Email": "plain_template",
+    "Table-Email": "table_template",
 }
 
 def send_emails_process(request: EmailSenderRequest, background_tasks: BackgroundTasks = None) -> Dict[str, str]:
@@ -176,13 +176,9 @@ def send_email_function(request: EmailSenderRequest) -> None:
         DatabaseUpdateError: If email log cannot be written to database
         Exception: For any other unexpected errors during email sending
     """
-    if request.Type.lower() != 'email':
-        logger.info(f"Ignoring request with type: {request.Type}")
-        return
-
-    template_file = template_mapping.get(request.TemplateName)
+    template_file = template_mapping.get(request.EmailType)
     if not template_file:
-        raise ValueError(f"Invalid TemplateName or no template file defined: {request.TemplateName}")
+        raise ValueError(f"Invalid EmailType or no template file defined: {request.EmailType}")
 
     try:
         template = jinja_env.get_template(f"{template_file}.html")
@@ -192,7 +188,7 @@ def send_email_function(request: EmailSenderRequest) -> None:
         logger.info(f"Render context: {render_context}")
 
         # Process Table_Filter_infor for Template-Table and Template-Mediation
-        if request.TemplateName in ["Template-Table", "Template-Mediation"] and hasattr(request.EmailBody, 'Table_Filter_infor'):
+        if request.EmailType in ["Table-Email"] and hasattr(request.EmailBody, 'Table_Filter_infor'):
             # Get the data dictionary from Table_Filter_infor
             table_data = request.EmailBody.Table_Filter_infor.data
             logger.info(f"Table data: {table_data}")
@@ -214,7 +210,7 @@ def send_email_function(request: EmailSenderRequest) -> None:
     msg = MIMEMultipart()
     # Use Sender_Name in From header (standard email format: Name <email>)
     # To use only email address, change to: msg['From'] = FROM_EMAIL
-    msg['From'] = f"{request.EmailBody.Sender_Name} <{FROM_EMAIL}>" if request.EmailBody.Sender_Name else FROM_EMAIL
+    msg['From'] = FROM_EMAIL
     msg['To'] = request.SendersMail
     msg['Cc'] = ', '.join(request.CarbonCopyTo or [])
     msg['Subject'] = request.Subject
@@ -250,31 +246,6 @@ def send_email_function(request: EmailSenderRequest) -> None:
         status = 'failed'
         logger.error(f"Failed to send email: {e}")
         raise
-    finally:
-        try:
-            db_instance = MongoDBConnectionSingleton()
-            # if db_instance.database is None:
-            #     raise DatabaseConnectionError("MongoDB connection is not established.")
-            # db = db_instance.get_database()
-            # db.email_logs.insert_one({
-            #     'type': request.Type,
-            #     'to': request.SendersMail,
-            #     'cc': request.CarbonCopyTo,
-            #     'subject': request.Subject,
-            #     'template': request.TemplateName,
-            #     'body': request.EmailBody.dict(),
-            #     'attachments': request.Attachments,
-            #     'date': request.Date,
-            #     'sent_at': str(sent_at),
-            #     'status': status
-            # })
-            logger.info("Email log inserted to DB")
-        except DatabaseConnectionError as e:
-            logger.error(f"Database connection error: {e}")
-            raise
-        except Exception as e:
-            logger.error(f"Failed to insert email log to DB: {e}")
-            raise DatabaseUpdateError(f"Failed to update database: {e}")
 
 def build_html_table(data: List[Dict[str, Any]]) -> str:
     """

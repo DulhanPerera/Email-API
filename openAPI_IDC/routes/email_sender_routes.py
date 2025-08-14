@@ -43,7 +43,7 @@ async def send_emails(
             "status": result.get("status"),
             "message": result.get("message"),
             "details": {
-                "template_used": request.TemplateName,
+                "template_used": request.EmailType,
                 "recipient": request.SendersMail,
                 "cc_recipients": request.CarbonCopyTo or [],
                 "has_attachments": len(request.Attachments or []) > 0,

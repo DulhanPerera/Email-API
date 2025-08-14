@@ -23,11 +23,10 @@ class EmailBodyModel(BaseModel):
     Table_Filter_infor: Optional[TableFilterInfo]
 
 class EmailSenderRequest(BaseModel):
-    Type: str
+    EmailType: str
     SendersMail: EmailStr
     CarbonCopyTo: List[EmailStr]
     Subject: str
-    TemplateName: str
     EmailBody: EmailBodyModel
     Attachments: List[str] = []
     Date: date
