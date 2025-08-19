@@ -1,0 +1,16 @@
+{
+  "EmailType": "Mediation",
+  "RecieverMail": "vicksurap@gmail.com",
+  "CarbonCopyTo": [
+    "vicksura.20210165@iit.ac.lk"
+  ],
+  "Subject": "Test Code",
+  "EmailBody": {
+    "Reciever_Name": "Dulhan Perera",
+    "Table_Filter_infor": {
+      "CompanyName": "TEST",
+      "Arears": 25000
+    }
+  },
+  "Attachments": []
+}

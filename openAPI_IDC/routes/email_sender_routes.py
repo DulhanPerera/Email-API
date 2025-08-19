@@ -1,10 +1,10 @@
-from fastapi import APIRouter , BackgroundTasks
-from openAPI_IDC.services.email_sender import send_emails_process
+from datetime import datetime
+from fastapi import APIRouter, BackgroundTasks, status
 from fastapi.responses import JSONResponse
-from fastapi import status
 from utils.logger import SingletonLogger
+from openAPI_IDC.services.email_sender import send_emails_process
 from openAPI_IDC.models.email_sender_model import EmailSenderRequest
-from utils.Custom_Exceptions import BaseCustomException,DatabaseConnectionError
+from utils.Custom_Exceptions import BaseCustomException, DatabaseConnectionError
 
 
 SingletonLogger.configure()
@@ -44,10 +44,10 @@ async def send_emails(
             "message": result.get("message"),
             "details": {
                 "template_used": request.EmailType,
-                "recipient": request.SendersMail,
+                "recipient": request.RecieverMail,
                 "cc_recipients": request.CarbonCopyTo or [],
                 "has_attachments": len(request.Attachments or []) > 0,
-                "sent_at": request.Date.isoformat() if request.Date else None
+                "sent_at": datetime.now().isoformat()
             }
         }
             

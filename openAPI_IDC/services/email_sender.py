@@ -35,7 +35,6 @@ Dependencies:
     * Python 3.12.4+
     * FastAPI
     * Jinja2
-    * pymongo
     * python-dotenv
 """
 
@@ -44,7 +43,6 @@ Version: 2.0
 Dependencies: 
     * fastapi
     * jinja2
-    * pymongo
     * python-dotenv
     * email-validator
 
@@ -119,11 +117,11 @@ jinja_env = jinja2.Environment(
 
 # Map template names to their corresponding HTML files
 template_mapping = {
-    "Mediation-Email": "mediation_board_template",
-    "Defaulted-Cases-Email": "defaulted_cases_template",
-    "Defaulted-Customers-Email": "defaulted_customers_template",
-    "Plain-Email": "plain_template",
-    "Table-Email": "table_template",
+    "Mediation": "mediation_board_template",
+    "Defaulted-Cases": "defaulted_cases_template",
+    "Defaulted-Customers": "defaulted_customers_template",
+    "Normal-Information": "plain_template",
+    "Table-Information": "table_template",
 }
 
 def send_emails_process(request: EmailSenderRequest, background_tasks: BackgroundTasks = None) -> Dict[str, str]:
@@ -183,12 +181,12 @@ def send_email_function(request: EmailSenderRequest) -> None:
     try:
         template = jinja_env.get_template(f"{template_file}.html")
         render_context = request.EmailBody.model_dump()
-        render_context["Date"] = datetime.now().strftime("%B %d, %Y")
+        render_context["Date"] = datetime.now().strftime("%B %d, %Y %I:%M %p")  # Format: Month Day, Year HH:MM AM/PM
         render_context["Subject"] = request.Subject  # Add subject to template context
         logger.info(f"Render context: {render_context}")
 
-        # Process Table_Filter_infor for Template-Table and Template-Mediation
-        if request.EmailType in ["Table-Email"] and hasattr(request.EmailBody, 'Table_Filter_infor'):
+        # Process Table_Filter_infor for Template-Table
+        if request.EmailType in ["Table-Information"] and hasattr(request.EmailBody, 'Table_Filter_infor'):
             # Get the data dictionary from Table_Filter_infor
             table_data = request.EmailBody.Table_Filter_infor.data
             logger.info(f"Table data: {table_data}")
@@ -211,7 +209,7 @@ def send_email_function(request: EmailSenderRequest) -> None:
     # Use Sender_Name in From header (standard email format: Name <email>)
     # To use only email address, change to: msg['From'] = FROM_EMAIL
     msg['From'] = FROM_EMAIL
-    msg['To'] = request.SendersMail
+    msg['To'] = request.RecieverMail
     msg['Cc'] = ', '.join(request.CarbonCopyTo or [])
     msg['Subject'] = request.Subject
     msg.attach(MIMEText(html_body, 'html'))
@@ -241,7 +239,7 @@ def send_email_function(request: EmailSenderRequest) -> None:
             if SMTP_USER and SMTP_PASSWORD:
                 server.login(SMTP_USER, SMTP_PASSWORD)
             server.send_message(msg)
-        logger.info(f"Email sent successfully to {request.SendersMail}")
+        logger.info(f"Email sent successfully to {request.RecieverMail}")
     except Exception as e:
         status = 'failed'
         logger.error(f"Failed to send email: {e}")
