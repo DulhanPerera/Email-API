@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>defaulted_customers_template</title>
+    <title>Action Required</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,opsz,wght@0,18..144,300..900;1,18..144,300..900&family=Mozilla+Headline:wght@200..700&display=swap" rel="stylesheet">
@@ -19,7 +19,7 @@
   <body style="margin:0; padding:0;">
     <!-- Full-page gradient background using tables -->
     <table width="100%" cellpadding="0" cellspacing="0" border="0" 
-       style="background: linear-gradient(to bottom left, #54c654 0%, #bdf1bd 30%, #adbdee 70%, #3760da 100%);">
+           style="background: linear-gradient(to bottom left, #54c654 0%, #bdf1bd 30%, #adbdee 70%, #3760da 100%);">
 
       <tr>
         <td align="center">
@@ -28,26 +28,30 @@
                  style="background: transparent; font-family: Arial, sans-serif; color: #333;">
             <tr>
               <td>
-                <h2 class="email-subject" style="color: #003366; text-align: center; margin-bottom: 30px;">
-                    {{Subject_3545}}
+                <h2 class="email-subject" style="color: #bc002f; text-align: center; margin-bottom: 30px;">
+                  {{ Subject_3545 }}
                 </h2>
-                <p style="color: #800040; font-size: 16px;">Dear {{Reciever_Name_3545}},</p>
+                <p style="color: #800040; font-size: 16px;">Dear {{ Reciever_Name_3545 }},</p>
 
                 <p style="font-size: 15px; color: #333;">
-                  Attached customer list assigned to recovery section will be scheduled to initiate necessary debt recovery actions/ Legal actions. <br><br>If you have any concerns with the attached list for initiating recovery actions, please arrange to submit all your concerns within 10 working days for consideration.<br><br>
-                  Kindly submit your responses to dil@slt.com.lk – Mrs. Dilrukshi Kumari.
+                  This is an urgent matter requiring your immediate attention. <br><br>This email is to provide you with the attached below, which has been prepared in response to your request.
                 </p>
+
+                {{ DYNAMIC_TABLE | safe }}
+
+                
                 
                 <p style="margin-top: 30px; font-size: 15px;">
                   Best regards,<br />
                   <strong style="color: #4b004b;">Revenue Division</strong>
                 </p>
+
                 <p style="font-size: 15px; color: #333;">
-                  This is an automated email.
+                  This is an automated email.  
                 </p>
-                
+
                 <hr style="border: none; border-top: 1px solid #ccc; margin: 30px 0;" />
-                
+
                 <p style="font-size: 13px; color: #555;">
                   Date: {{ Date_3545 }}
                 </p>

@@ -122,6 +122,7 @@ template_mapping = {
     "Defaulted-Customers": "defaulted_customers_template",
     "Normal-Information": "plain_template",
     "Table-Information": "table_template",
+    "Action-Required": "action_required_template"
 }
 
 def send_emails_process(request: EmailSenderRequest, background_tasks: BackgroundTasks = None) -> Dict[str, str]:
@@ -181,12 +182,14 @@ def send_email_function(request: EmailSenderRequest) -> None:
     try:
         template = jinja_env.get_template(f"{template_file}.html")
         render_context = request.EmailBody.model_dump()
-        render_context["Date"] = datetime.now().strftime("%B %d, %Y %I:%M %p")  # Format: Month Day, Year HH:MM AM/PM
-        render_context["Subject"] = request.Subject  # Add subject to template context
+        render_context["Date_3545"] = datetime.now().strftime("%B %d, %Y %I:%M %p")  # Format: Month Day, Year HH:MM AM/PM
+        # render_context["Subject"] = request.Subject  # Keep for backward compatibility
+        render_context["Subject_3545"] = request.Subject  # New subject variable name
+        render_context["Reciever_Name_3545"] = request.EmailBody.Reciever_Name  # New recipient name variable
         logger.info(f"Render context: {render_context}")
 
         # Process Table_Filter_infor for Template-Table
-        if request.EmailType in ["Table-Information"] and hasattr(request.EmailBody, 'Table_Filter_infor'):
+        if request.EmailType in ["Table-Information", "Action-Required"] and hasattr(request.EmailBody, 'Table_Filter_infor'):
             # Get the data dictionary from Table_Filter_infor
             table_data = request.EmailBody.Table_Filter_infor.data
             logger.info(f"Table data: {table_data}")
